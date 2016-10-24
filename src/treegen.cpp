@@ -155,7 +155,11 @@ treegen::error make_ltree(MMVManip &vmanip, v3s16 p0,
 	else
 		seed = p0.X * 2 + p0.Y * 4 + p0.Z;  // use the tree position to seed PRNG
 	PseudoRandom ps(seed);
-
+	Bool newdecay = (Settings::exists("newdecay") && Settings::getBool("newdecay")); // use the new decay algorithm with tree IDs
+	// Generate Tree ID from position. Should be unique within search range
+	if (newdecay) {
+	  int id = (p0.X & 0xfff) <<18 + p0.Y & 0x0fc >> 2 + (p0.Z &0xfff) << 6;
+	}
 	// chance of inserting abcd rules
 	double prop_a = 9;
 	double prop_b = 8;
@@ -550,6 +554,7 @@ void tree_trunk_placement(MMVManip &vmanip, v3f p0, TreeDef &tree_definition)
 	if (vmanip.m_data[vi].getContent() != CONTENT_AIR
 			&& vmanip.m_data[vi].getContent() != CONTENT_IGNORE)
 		return;
+	// TODO: set node_meta to tree ID.
 	vmanip.m_data[vmanip.m_area.index(p1)] = tree_definition.trunknode;
 }
 
