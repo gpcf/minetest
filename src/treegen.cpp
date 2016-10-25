@@ -19,6 +19,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "irr_v3d.h"
 #include <stack>
+#include <string>
 #include "util/pointer.h"
 #include "util/numeric.h"
 #include "util/mathconstants.h"
@@ -30,6 +31,15 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 namespace treegen
 {
 
+int set_id_in_metadata (int id, ServerMap *map, v3s16 pos) {
+  NodeMetadata *meta = map->getNodeMetadata(pos);
+  if (meta == NULL) {
+    return 0;
+  }
+  meta->setString("treeid", std::to_string(id));
+  return 1;
+}
+  
 void make_tree(MMVManip &vmanip, v3s16 p0,
 		bool is_apple_tree, INodeDefManager *ndef, s32 seed)
 {
@@ -122,7 +132,7 @@ treegen::error spawn_ltree(ServerEnvironment *env, v3s16 p0,
 	treegen::error e;
 
 	vmanip.initialEmerge(tree_blockp - v3s16(1, 1, 1), tree_blockp + v3s16(1, 3, 1));
-	e = make_ltree(vmanip, p0, ndef, tree_definition);
+	e = make_ltree(vmanip, p0, ndef, tree_definition, map);
 	if (e != SUCCESS)
 		return e;
 
@@ -146,20 +156,21 @@ treegen::error spawn_ltree(ServerEnvironment *env, v3s16 p0,
 
 //L-System tree generator
 treegen::error make_ltree(MMVManip &vmanip, v3s16 p0,
-		INodeDefManager *ndef, TreeDef tree_definition)
+			  INodeDefManager *ndef, TreeDef tree_definition, ServerMap* map)
 {
 	MapNode dirtnode(ndef->getId("mapgen_dirt"));
 	s32 seed;
+	int id;
 	if (tree_definition.explicit_seed)
 		seed = tree_definition.seed + 14002;
 	else
 		seed = p0.X * 2 + p0.Y * 4 + p0.Z;  // use the tree position to seed PRNG
 	PseudoRandom ps(seed);
-	Bool newdecay = (Settings::exists("newdecay") && Settings::getBool("newdecay")); // use the new decay algorithm with tree IDs
+	//	Bool newdecay = (Settings::exists("newdecay") && Settings::getBool("newdecay")); // use the new decay algorithm with tree IDs
 	// Generate Tree ID from position. Should be unique within search range
-	if (newdecay) {
-	  int id = (p0.X & 0xfff) <<18 + p0.Y & 0x0fc >> 2 + (p0.Z &0xfff) << 6;
-	}
+	//if (newdecay) {
+	id = ((p0.X & 0xfff) <<18) + ((p0.Y & 0x0fc) >> 2) + ((p0.Z &0xfff) << 6);
+	  //}
 	// chance of inserting abcd rules
 	double prop_a = 9;
 	double prop_b = 8;
@@ -235,38 +246,38 @@ treegen::error make_ltree(MMVManip &vmanip, v3s16 p0,
 		tree_node_placement(
 			vmanip,
 			v3f(position.X + 1, position.Y - 1, position.Z),
-			dirtnode
+			dirtnode, id, map
 		);
 		tree_node_placement(
 			vmanip,
 			v3f(position.X, position.Y - 1, position.Z + 1),
-			dirtnode
+			dirtnode, id, map
 		);
 		tree_node_placement(
 			vmanip,
 			v3f(position.X + 1, position.Y - 1, position.Z + 1),
-			dirtnode
+			dirtnode, id, map
 		);
 	} else if (tree_definition.trunk_type == "crossed") {
 		tree_node_placement(
 			vmanip,
 			v3f(position.X + 1, position.Y - 1, position.Z),
-			dirtnode
+			dirtnode, id, map
 		);
 		tree_node_placement(
 			vmanip,
 			v3f(position.X - 1, position.Y - 1, position.Z),
-			dirtnode
+			dirtnode, id, map
 		);
 		tree_node_placement(
 			vmanip,
 			v3f(position.X, position.Y - 1, position.Z + 1),
-			dirtnode
+			dirtnode, id, map
 		);
 		tree_node_placement(
 			vmanip,
 			v3f(position.X, position.Y - 1, position.Z - 1),
-			dirtnode
+			dirtnode, id, map
 		);
 	}
 
@@ -314,46 +325,46 @@ treegen::error make_ltree(MMVManip &vmanip, v3s16 p0,
 			tree_trunk_placement(
 				vmanip,
 				v3f(position.X, position.Y, position.Z),
-				tree_definition
+				tree_definition, id, map
 			);
 			if (tree_definition.trunk_type == "double" &&
 					!tree_definition.thin_branches) {
 				tree_trunk_placement(
 					vmanip,
 					v3f(position.X + 1, position.Y, position.Z),
-					tree_definition
+					tree_definition, id, map
 				);
 				tree_trunk_placement(
 					vmanip,
 					v3f(position.X, position.Y, position.Z + 1),
-					tree_definition
+					tree_definition, id, map
 				);
 				tree_trunk_placement(
 					vmanip,
 					v3f(position.X + 1, position.Y, position.Z + 1),
-					tree_definition
+					tree_definition, id, map
 				);
 			} else if (tree_definition.trunk_type == "crossed" &&
 					!tree_definition.thin_branches) {
 				tree_trunk_placement(
 					vmanip,
 					v3f(position.X + 1, position.Y, position.Z),
-					tree_definition
+					tree_definition, id, map
 				);
 				tree_trunk_placement(
 					vmanip,
 					v3f(position.X - 1, position.Y, position.Z),
-					tree_definition
+					tree_definition, id, map
 				);
 				tree_trunk_placement(
 					vmanip,
 					v3f(position.X, position.Y, position.Z + 1),
-					tree_definition
+					tree_definition, id, map
 				);
 				tree_trunk_placement(
 					vmanip,
 					v3f(position.X, position.Y, position.Z - 1),
-					tree_definition
+					tree_definition, id, map
 				);
 			}
 			dir = v3f(1, 0, 0);
@@ -364,7 +375,7 @@ treegen::error make_ltree(MMVManip &vmanip, v3s16 p0,
 			tree_trunk_placement(
 				vmanip,
 				v3f(position.X, position.Y, position.Z),
-				tree_definition
+				tree_definition, id, map
 			);
 			if ((stack_orientation.empty() &&
 					tree_definition.trunk_type == "double") ||
@@ -374,17 +385,17 @@ treegen::error make_ltree(MMVManip &vmanip, v3s16 p0,
 				tree_trunk_placement(
 					vmanip,
 					v3f(position.X +1 , position.Y, position.Z),
-					tree_definition
+					tree_definition, id, map
 				);
 				tree_trunk_placement(
 					vmanip,
 					v3f(position.X, position.Y, position.Z + 1),
-					tree_definition
+					tree_definition, id, map
 				);
 				tree_trunk_placement(
 					vmanip,
 					v3f(position.X + 1, position.Y, position.Z + 1),
-					tree_definition
+					tree_definition, id, map
 				);
 			} else if ((stack_orientation.empty() &&
 					tree_definition.trunk_type == "crossed") ||
@@ -394,22 +405,22 @@ treegen::error make_ltree(MMVManip &vmanip, v3s16 p0,
 				tree_trunk_placement(
 					vmanip,
 					v3f(position.X + 1, position.Y, position.Z),
-					tree_definition
+					tree_definition, id, map
 				);
 				tree_trunk_placement(
 					vmanip,
 					v3f(position.X - 1, position.Y, position.Z),
-					tree_definition
+					tree_definition, id, map
 				);
 				tree_trunk_placement(
 					vmanip,
 					v3f(position.X, position.Y, position.Z + 1),
-					tree_definition
+					tree_definition, id, map
 				);
 				tree_trunk_placement(
 					vmanip,
 					v3f(position.X, position.Y, position.Z - 1),
-					tree_definition
+					tree_definition, id, map
 				);
 			} if (stack_orientation.empty() == false) {
 				s16 size = 1;
@@ -424,26 +435,26 @@ treegen::error make_ltree(MMVManip &vmanip, v3s16 p0,
 							v3f(position.X + x + 1, position.Y + y,
 									position.Z + z),
 							ps.next(),
-							tree_definition
+							tree_definition, id, map
 						);
 						tree_leaves_placement(
 							vmanip,
 							v3f(position.X + x - 1, position.Y + y,
 									position.Z + z),
 							ps.next(),
-							tree_definition
+							tree_definition, id, map
 						);
 						tree_leaves_placement(
 							vmanip,v3f(position.X + x, position.Y + y,
 									position.Z + z + 1),
 							ps.next(),
-							tree_definition
+							tree_definition, id, map
 						);
 						tree_leaves_placement(
 							vmanip,v3f(position.X + x, position.Y + y,
 									position.Z + z - 1),
 							ps.next(),
-							tree_definition
+							tree_definition, id, map
 						);
 					}
 				}
@@ -457,7 +468,7 @@ treegen::error make_ltree(MMVManip &vmanip, v3s16 p0,
 				vmanip,
 				v3f(position.X, position.Y, position.Z),
 				ps.next(),
-				tree_definition
+				tree_definition, id, map
 			);
 			dir = v3f(1, 0, 0);
 			dir = transposeMatrix(rotation, dir);
@@ -467,7 +478,7 @@ treegen::error make_ltree(MMVManip &vmanip, v3s16 p0,
 			tree_fruit_placement(
 				vmanip,
 				v3f(position.X, position.Y, position.Z),
-				tree_definition
+				tree_definition, id, map
 			);
 			dir = v3f(1, 0, 0);
 			dir = transposeMatrix(rotation, dir);
@@ -532,7 +543,7 @@ treegen::error make_ltree(MMVManip &vmanip, v3s16 p0,
 }
 
 
-void tree_node_placement(MMVManip &vmanip, v3f p0, MapNode node)
+void tree_node_placement(MMVManip &vmanip, v3f p0, MapNode node, int id, ServerMap *map)
 {
 	v3s16 p1 = v3s16(myround(p0.X), myround(p0.Y), myround(p0.Z));
 	if (vmanip.m_area.contains(p1) == false)
@@ -542,10 +553,11 @@ void tree_node_placement(MMVManip &vmanip, v3f p0, MapNode node)
 			&& vmanip.m_data[vi].getContent() != CONTENT_IGNORE)
 		return;
 	vmanip.m_data[vmanip.m_area.index(p1)] = node;
+	set_id_in_metadata(id, map, p1);
 }
 
 
-void tree_trunk_placement(MMVManip &vmanip, v3f p0, TreeDef &tree_definition)
+void tree_trunk_placement(MMVManip &vmanip, v3f p0, TreeDef &tree_definition, int id, ServerMap *map)
 {
 	v3s16 p1 = v3s16(myround(p0.X), myround(p0.Y), myround(p0.Z));
 	if (vmanip.m_area.contains(p1) == false)
@@ -556,11 +568,12 @@ void tree_trunk_placement(MMVManip &vmanip, v3f p0, TreeDef &tree_definition)
 		return;
 	// TODO: set node_meta to tree ID.
 	vmanip.m_data[vmanip.m_area.index(p1)] = tree_definition.trunknode;
+	set_id_in_metadata(id, map, p1);
 }
 
 
 void tree_leaves_placement(MMVManip &vmanip, v3f p0,
-		PseudoRandom ps, TreeDef &tree_definition)
+			   PseudoRandom ps, TreeDef &tree_definition, int id, ServerMap *map)
 {
 	MapNode leavesnode = tree_definition.leavesnode;
 	if (ps.range(1, 100) > 100 - tree_definition.leaves2_chance)
@@ -573,18 +586,22 @@ void tree_leaves_placement(MMVManip &vmanip, v3f p0,
 			&& vmanip.m_data[vi].getContent() != CONTENT_IGNORE)
 		return;
 	if (tree_definition.fruit_chance > 0) {
-		if (ps.range(1, 100) > 100 - tree_definition.fruit_chance)
-			vmanip.m_data[vmanip.m_area.index(p1)] = tree_definition.fruitnode;
-		else
-			vmanip.m_data[vmanip.m_area.index(p1)] = leavesnode;
+	  if (ps.range(1, 100) > 100 - tree_definition.fruit_chance) {
+	    vmanip.m_data[vmanip.m_area.index(p1)] = tree_definition.fruitnode;
+	    set_id_in_metadata(id, map, p1);
+	  } else {
+	    vmanip.m_data[vmanip.m_area.index(p1)] = leavesnode;
+	    set_id_in_metadata(id, map, p1);
+	  }
 	} else if (ps.range(1, 100) > 20) {
-		vmanip.m_data[vmanip.m_area.index(p1)] = leavesnode;
+	  vmanip.m_data[vmanip.m_area.index(p1)] = leavesnode;
+	  set_id_in_metadata(id, map, p1);
 	}
 }
 
 
 void tree_single_leaves_placement(MMVManip &vmanip, v3f p0,
-		PseudoRandom ps, TreeDef &tree_definition)
+				  PseudoRandom ps, TreeDef &tree_definition, int id, ServerMap *map)
 {
 	MapNode leavesnode = tree_definition.leavesnode;
 	if (ps.range(1, 100) > 100 - tree_definition.leaves2_chance)
@@ -597,10 +614,11 @@ void tree_single_leaves_placement(MMVManip &vmanip, v3f p0,
 			&& vmanip.m_data[vi].getContent() != CONTENT_IGNORE)
 		return;
 	vmanip.m_data[vmanip.m_area.index(p1)] = leavesnode;
+	set_id_in_metadata(id, map, p1);
 }
 
 
-void tree_fruit_placement(MMVManip &vmanip, v3f p0, TreeDef &tree_definition)
+void tree_fruit_placement(MMVManip &vmanip, v3f p0, TreeDef &tree_definition, int id, ServerMap *map)
 {
 	v3s16 p1 = v3s16(myround(p0.X), myround(p0.Y), myround(p0.Z));
 	if (vmanip.m_area.contains(p1) == false)
@@ -610,6 +628,7 @@ void tree_fruit_placement(MMVManip &vmanip, v3f p0, TreeDef &tree_definition)
 			&& vmanip.m_data[vi].getContent() != CONTENT_IGNORE)
 		return;
 	vmanip.m_data[vmanip.m_area.index(p1)] = tree_definition.fruitnode;
+	set_id_in_metadata(id, map, p1);
 }
 
 

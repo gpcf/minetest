@@ -57,7 +57,7 @@ namespace treegen {
 		s32 seed;
 		bool explicit_seed;
 	};
-
+	int set_id_in_metadata (int id, ServerMap *map, v3s16 pos);
 	// Add default tree
 	void make_tree(MMVManip &vmanip, v3s16 p0,
 		bool is_apple_tree, INodeDefManager *ndef, s32 seed);
@@ -70,22 +70,22 @@ namespace treegen {
 
 	// Add L-Systems tree (used by engine)
 	treegen::error make_ltree(MMVManip &vmanip, v3s16 p0, INodeDefManager *ndef,
-		TreeDef tree_definition);
+				  TreeDef tree_definition, ServerMap *map);
 	// Spawn L-systems tree from LUA
 	treegen::error spawn_ltree (ServerEnvironment *env, v3s16 p0, INodeDefManager *ndef,
-		TreeDef tree_definition);
+				    TreeDef tree_definition);
 
 	// L-System tree gen helper functions
 	void tree_node_placement(MMVManip &vmanip, v3f p0,
-		MapNode node);
+				 MapNode node, int id, ServerMap *map);
 	void tree_trunk_placement(MMVManip &vmanip, v3f p0,
-		TreeDef &tree_definition);
+				  TreeDef &tree_definition, int id, ServerMap *map);
 	void tree_leaves_placement(MMVManip &vmanip, v3f p0,
-		PseudoRandom ps, TreeDef &tree_definition);
+				   PseudoRandom ps, TreeDef &tree_definition, int id, ServerMap *map);
 	void tree_single_leaves_placement(MMVManip &vmanip, v3f p0,
-		PseudoRandom ps, TreeDef &tree_definition);
+					  PseudoRandom ps, TreeDef &tree_definition, int id, ServerMap *map);
 	void tree_fruit_placement(MMVManip &vmanip, v3f p0,
-		TreeDef &tree_definition);
+				  TreeDef &tree_definition, int id, ServerMap *map);
 	irr::core::matrix4 setRotationAxisRadians(irr::core::matrix4 M, double angle, v3f axis);
 
 	v3f transposeMatrix(irr::core::matrix4 M ,v3f v);
